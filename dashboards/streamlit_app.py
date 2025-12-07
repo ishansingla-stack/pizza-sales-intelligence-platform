@@ -396,10 +396,12 @@ elif page == "🔮 Demand Forecasting (ML)":
             pred_hour = st.slider("Hour of Day", 0, 23, 12)
 
         with col2:
-            day_of_week = pred_date.dayofweek
-            month = pred_date.month
-            day_of_month = pred_date.day
-            week_of_year = pred_date.isocalendar()[1]
+            # Convert date to pandas Timestamp for proper attribute access
+            pred_ts = pd.Timestamp(pred_date)
+            day_of_week = pred_ts.dayofweek
+            month = pred_ts.month
+            day_of_month = pred_ts.day
+            week_of_year = pred_ts.isocalendar()[1]
             is_weekend = 1 if day_of_week >= 5 else 0
 
             st.info(f"**Day:** {pred_date.strftime('%A')}")
