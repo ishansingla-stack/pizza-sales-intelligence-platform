@@ -52,22 +52,6 @@ st.markdown("""
 st.markdown('<p class="main-header">🍕 Pizza Intelligence Platform</p>', unsafe_allow_html=True)
 st.markdown("**Data-Driven Business Intelligence for Pizza Operations**")
 
-# Sidebar Navigation
-st.sidebar.title("Navigation")
-page = st.sidebar.radio(
-    "Select View",
-    ["📊 Executive Dashboard", "🔮 Demand Forecasting (ML)", "👥 Customer Segments", "🔗 Bundle Recommendations", "📈 Sales Trends", "⏰ Staffing & Peak Hours", "📉 Business Metrics"]
-)
-
-# Show Phase 1 deployment status
-if models:
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("**Phase 1 Models**")
-    st.sidebar.success("✅ Demand Forecasting")
-    st.sidebar.success("✅ Customer Clustering")
-    st.sidebar.info("⏳ Revenue Prediction (Training)")
-    st.sidebar.info("⏳ Recommendations (Pending)")
-
 # Load Data
 @st.cache_data
 def load_data():
@@ -139,6 +123,22 @@ models = load_ml_models()
 if data is None:
     st.error("Failed to load data. Please ensure all analysis scripts have been run.")
     st.stop()
+
+# Sidebar Navigation (AFTER loading data/models)
+st.sidebar.title("Navigation")
+page = st.sidebar.radio(
+    "Select View",
+    ["📊 Executive Dashboard", "🔮 Demand Forecasting (ML)", "👥 Customer Segments", "🔗 Bundle Recommendations", "📈 Sales Trends", "⏰ Staffing & Peak Hours", "📉 Business Metrics"]
+)
+
+# Show Phase 1 deployment status
+if models:
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("**Phase 1 Models**")
+    st.sidebar.success("✅ Demand Forecasting")
+    st.sidebar.success("✅ Customer Clustering")
+    st.sidebar.info("⏳ Revenue Prediction (Training)")
+    st.sidebar.info("⏳ Recommendations (Pending)")
 
 # ============================================================================
 # PAGE 1: EXECUTIVE DASHBOARD
