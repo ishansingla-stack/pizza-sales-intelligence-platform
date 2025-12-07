@@ -15,11 +15,11 @@ import numpy as np
 import mlflow
 import mlflow.sklearn
 import pickle
-from mlxtend.frequent_patterns import apriori, association_rules
+from mlxtend.frequent_patterns import apriori, fpgrowth, association_rules
 from src.config_loader import ConfigLoader
 
 print("=" * 80)
-print("GENERATE ASSOCIATION RULES FOR PRODUCTION")
+print("GENERATE ASSOCIATION RULES FOR PRODUCTION (FP-GROWTH)")
 print("=" * 80)
 
 # Setup Databricks
@@ -70,7 +70,7 @@ print(f"[OK] Created basket with {len(basket)} orders and {len(basket.columns)} 
 # STEP 3: GENERATE ASSOCIATION RULES - CHAMPION PARAMETERS
 # ============================================================================
 print("\n" + "=" * 80)
-print("STEP 3: GENERATE ASSOCIATION RULES (APRIORI)")
+print("STEP 3: GENERATE ASSOCIATION RULES (FP-GROWTH)")
 print("=" * 80)
 
 # Champion parameters from previous runs
@@ -86,14 +86,14 @@ print(f"    - min_threshold: {min_threshold}")
 # Start MLflow run
 with mlflow.start_run(run_name="PRODUCTION_ASSOCIATION_RULES"):
     # Log parameters
-    mlflow.log_param("algorithm", "Apriori")
+    mlflow.log_param("algorithm", "FP-Growth")
     mlflow.log_param("min_support", min_support)
     mlflow.log_param("metric", metric_type)
     mlflow.log_param("min_threshold", min_threshold)
 
-    # Get frequent itemsets
-    print(f"\n[*] Finding frequent itemsets...")
-    frequent_itemsets = apriori(basket, min_support=min_support, use_colnames=True)
+    # Get frequent itemsets using FP-Growth (faster than Apriori)
+    print(f"\n[*] Finding frequent itemsets using FP-Growth...")
+    frequent_itemsets = fpgrowth(basket, min_support=min_support, use_colnames=True)
     print(f"[OK] Found {len(frequent_itemsets)} frequent itemsets")
 
     # Generate association rules
@@ -165,7 +165,7 @@ with mlflow.start_run(run_name="PRODUCTION_ASSOCIATION_RULES"):
         'frequent_itemsets': frequent_itemsets,
         'rules_df': rules_df,
         'params': {
-            'algorithm': 'Apriori',
+            'algorithm': 'FP-Growth',
             'min_support': min_support,
             'metric': metric_type,
             'min_threshold': min_threshold
@@ -187,7 +187,7 @@ with mlflow.start_run(run_name="PRODUCTION_ASSOCIATION_RULES"):
     # Save config JSON
     import json
     config_data = {
-        'model_type': 'Apriori',
+        'model_type': 'FP-Growth',
         'status': 'deployed',
         'params': assoc_model['params'],
         'metrics': assoc_model['metrics'],
