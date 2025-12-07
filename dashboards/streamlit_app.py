@@ -88,11 +88,105 @@ def load_data():
 
     return data
 
+# Load ML Models
+@st.cache_resource
+def load_ml_models():
+    """Load trained ML models and metadata"""
+    import joblib
+    import json
+
+    models_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs", "models")
+
+    models = {}
+    try:
+        # Load revenue model
+        revenue_model_path = os.path.join(models_dir, "revenue_model.pkl")
+        revenue_metadata_path = os.path.join(models_dir, "revenue_model_metadata.json")
+
+        models['revenue_model'] = joblib.load(revenue_model_path)
+        with open(revenue_metadata_path, 'r') as f:
+            models['revenue_metadata'] = json.load(f)
+
+        # Load quantity model
+        quantity_model_path = os.path.join(models_dir, "quantity_model.pkl")
+        quantity_metadata_path = os.path.join(models_dir, "quantity_model_metadata.json")
+
+        models['quantity_model'] = joblib.load(quantity_model_path)
+        with open(quantity_metadata_path, 'r') as f:
+            models['quantity_metadata'] = json.load(f)
+
+        return models
+    except Exception as e:
+        st.warning(f"ML models not available: {e}")
+        return None
+
 data = load_data()
+models = load_ml_models()
 
 if data is None:
     st.error("Failed to load data. Please ensure all analysis scripts have been run.")
     st.stop()
+
+# Helper function for ML predictions
+def prepare_order_features(pizza_name, pizza_size, pizza_category, quantity, unit_price, ingredient_count, hour, day_of_week, month):
+    """Prepare features for ML model prediction"""
+    import numpy as np
+
+    # Initialize feature vector with all expected features
+    features = {}
+
+    # Time features
+    features['Hour'] = hour
+    features['Day_of_Week'] = day_of_week
+    features['Month'] = month
+    features['Is_Weekend'] = 1 if day_of_week in [5, 6] else 0
+
+    # Cyclic encoding
+    features['Hour_Sin'] = np.sin(2 * np.pi * hour / 24)
+    features['Hour_Cos'] = np.cos(2 * np.pi * hour / 24)
+    features['Day_Sin'] = np.sin(2 * np.pi * day_of_week / 7)
+    features['Day_Cos'] = np.cos(2 * np.pi * day_of_week / 7)
+    features['Month_Sin'] = np.sin(2 * np.pi * month / 12)
+    features['Month_Cos'] = np.cos(2 * np.pi * month / 12)
+
+    # Order details
+    features['Unit_Price'] = unit_price
+    features['Quantity'] = quantity
+    features['Ingredient_Count'] = ingredient_count
+
+    # Category one-hot encoding
+    for cat in ['Chicken', 'Classic', 'Supreme', 'Veggie']:
+        features[f'Category_{cat}'] = 1 if pizza_category == cat else 0
+
+    # Size one-hot encoding
+    for size in ['L', 'M', 'S', 'XL', 'XXL']:
+        features[f'Size_{size}'] = 1 if pizza_size == size else 0
+
+    # Pizza name one-hot encoding (all pizzas from metadata)
+    all_pizzas = [
+        "The Barbecue Chicken Pizza", "The Big Meat Pizza", "The Brie Carre Pizza",
+        "The Calabrese Pizza", "The California Chicken Pizza", "The Chicken Alfredo Pizza",
+        "The Chicken Pesto Pizza", "The Classic Deluxe Pizza", "The Five Cheese Pizza",
+        "The Four Cheese Pizza", "The Greek Pizza", "The Green Garden Pizza",
+        "The Hawaiian Pizza", "The Italian Capocollo Pizza", "The Italian Supreme Pizza",
+        "The Italian Vegetables Pizza", "The Mediterranean Pizza", "The Mexicana Pizza",
+        "The Napolitana Pizza", "The Pepper Salami Pizza", "The Pepperoni Pizza",
+        "The Pepperoni, Mushroom, and Peppers Pizza", "The Prosciutto and Arugula Pizza",
+        "The Sicilian Pizza", "The Soppressata Pizza", "The Southwest Chicken Pizza",
+        "The Spicy Italian Pizza", "The Spinach Pesto Pizza", "The Spinach Supreme Pizza",
+        "The Spinach and Feta Pizza", "The Thai Chicken Pizza", "The Vegetables + Vegetables Pizza"
+    ]
+
+    for pizza in all_pizzas:
+        features[f'Pizza_{pizza}'] = 1 if pizza_name == pizza else 0
+
+    # Convert to DataFrame with correct column order
+    if models and 'revenue_metadata' in models:
+        feature_names = models['revenue_metadata']['feature_names']
+        feature_df = pd.DataFrame([features])[feature_names]
+        return feature_df
+    else:
+        return pd.DataFrame([features])
 
 # ============================================================================
 # PAGE 1: EXECUTIVE DASHBOARD
@@ -804,6 +898,96 @@ elif page == "📈 Sales Forecasting":
         last_week = daily_sales.tail(7)['total_price'].mean()
         growth = ((last_week - first_week) / first_week * 100) if first_week > 0 else 0
         st.metric("Trend", f"{growth:+.1f}%", delta=f"vs first week")
+
+    # ML-Powered Order Revenue Predictor
+    if models:
+        st.markdown("---")
+        st.subheader("ML-Powered Order Revenue Predictor")
+        st.markdown(f"**Trained Model**: {models['revenue_metadata']['model_type']} (R² = {models['revenue_metadata']['test_r2']:.4f}, RMSE = ${models['revenue_metadata']['test_rmse']:.2f})")
+
+        st.markdown("Configure an order to predict its revenue using our trained ML model:")
+
+        # Order configuration
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            # Get unique pizzas from transactions
+            unique_pizzas = sorted(data['transactions']['pizza_name'].unique())
+            selected_pizza = st.selectbox("Select Pizza", unique_pizzas)
+
+            # Get info for selected pizza
+            pizza_info = data['transactions'][data['transactions']['pizza_name'] == selected_pizza].iloc[0]
+
+        with col2:
+            selected_size = st.selectbox("Size", ['S', 'M', 'L', 'XL', 'XXL'])
+            selected_quantity = st.slider("Quantity", 1, 5, 1)
+
+        with col3:
+            selected_hour = st.slider("Hour of Day", 0, 23, 12)
+            selected_day = st.selectbox("Day of Week",
+                                       ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                                       index=4)
+            day_map = {'Monday': 0, 'Tuesday': 1, 'Wednesday': 2, 'Thursday': 3, 'Friday': 4, 'Saturday': 5, 'Sunday': 6}
+            selected_day_num = day_map[selected_day]
+
+        # Additional details
+        col1, col2 = st.columns(2)
+        with col1:
+            # Extract category and ingredients from selected pizza
+            pizza_category = pizza_info['pizza_category']
+            st.info(f"Category: {pizza_category}")
+
+        with col2:
+            ingredient_count = len(pizza_info['pizza_ingredients'].split(','))
+            st.info(f"Ingredients: {ingredient_count}")
+
+        # Get unit price from data (average for this pizza/size combination)
+        size_price_map = data['transactions'][(data['transactions']['pizza_name'] == selected_pizza) &
+                                              (data['transactions']['pizza_size'] == selected_size)]
+        if len(size_price_map) > 0:
+            unit_price = size_price_map['unit_price'].mean()
+        else:
+            # Fallback to any size for this pizza
+            unit_price = data['transactions'][data['transactions']['pizza_name'] == selected_pizza]['unit_price'].mean()
+
+        # Predict button
+        if st.button("Predict Order Revenue", type="primary"):
+            try:
+                # Prepare features
+                features = prepare_order_features(
+                    pizza_name=selected_pizza,
+                    pizza_size=selected_size,
+                    pizza_category=pizza_category,
+                    quantity=selected_quantity,
+                    unit_price=unit_price,
+                    ingredient_count=ingredient_count,
+                    hour=selected_hour,
+                    day_of_week=selected_day_num,
+                    month=pd.Timestamp.now().month
+                )
+
+                # Make prediction
+                predicted_revenue = models['revenue_model'].predict(features)[0]
+
+                # Display results
+                st.success(f"Predicted Order Revenue: **${predicted_revenue:.2f}**")
+
+                # Show comparison
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    actual_avg = unit_price * selected_quantity
+                    st.metric("Simple Calculation", f"${actual_avg:.2f}",
+                             help="Unit Price × Quantity")
+                with col2:
+                    st.metric("ML Prediction", f"${predicted_revenue:.2f}",
+                             help="Using 54 features including time, pizza type, and seasonality")
+                with col3:
+                    difference = predicted_revenue - actual_avg
+                    st.metric("ML Adjustment", f"${difference:+.2f}",
+                             help="Accounts for demand patterns and cross-selling")
+
+            except Exception as e:
+                st.error(f"Prediction error: {e}")
 
 # ============================================================================
 # PAGE 5: STAFFING & PEAK HOURS
