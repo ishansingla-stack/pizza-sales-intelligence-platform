@@ -593,7 +593,7 @@ elif page == "🔗 Bundle Recommendations":
         rules_display = data['association_rules'].copy()
     else:
         st.error("No association rules data available. Please run the association rules generation script.")
-        return
+        st.stop()
 
     # Calculate total orders for frequency calculation
     total_orders = data['transactions']['order_id'].nunique() if 'transactions' in data else 10000
@@ -605,7 +605,7 @@ elif page == "🔗 Bundle Recommendations":
         rules_display['lift_display'] = rules_display['lift'].round(2)
     else:
         st.error("Association rules data is missing required columns (support, lift).")
-        return
+        st.stop()
 
     # Display top 10 rules
     top_rules = rules_display.nlargest(10, 'lift')[
