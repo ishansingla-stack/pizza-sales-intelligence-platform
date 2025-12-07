@@ -1,0 +1,17 @@
+{
+  "model_type": "Apriori",
+  "status": "deployed",
+  "params": {
+    "algorithm": "Apriori",
+    "min_support": 0.005,
+    "metric": "lift",
+    "min_threshold": 0.5
+  },
+  "metrics": {
+    "num_rules": 460,
+    "avg_lift": 1.0928632698499774,
+    "avg_confidence": 0.09074860431076531
+  },
+  "num_rules": 460,
+  "use_case": "Product recommendations and bundle suggestions"
+}

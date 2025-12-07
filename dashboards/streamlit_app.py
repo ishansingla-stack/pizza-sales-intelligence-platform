@@ -112,6 +112,19 @@ def load_ml_models():
         with open(cluster_config_path, 'r') as f:
             models['cluster_config'] = json.load(f)
 
+        # Load association rules
+        assoc_rules_path = os.path.join(models_dir, "association_rules.csv")
+        assoc_config_path = os.path.join(models_dir, "association_rules_config.json")
+
+        try:
+            models['association_rules'] = pd.read_csv(assoc_rules_path)
+            with open(assoc_config_path, 'r') as f:
+                models['association_config'] = json.load(f)
+            models['association_status'] = 'deployed'
+        except Exception as e:
+            st.warning(f"Association rules not available: {e}")
+            models['association_status'] = 'pending'
+
         return models
     except Exception as e:
         st.warning(f"Phase 1 ML models not available: {e}")
@@ -134,11 +147,14 @@ page = st.sidebar.radio(
 # Show Phase 1 deployment status
 if models:
     st.sidebar.markdown("---")
-    st.sidebar.markdown("**Phase 1 Models**")
+    st.sidebar.markdown("**ML Models Status**")
     st.sidebar.success("✅ Demand Forecasting")
     st.sidebar.success("✅ Customer Clustering")
+    if models.get('association_status') == 'deployed':
+        st.sidebar.success(f"✅ Association Rules ({models.get('association_config', {}).get('num_rules', 0)} rules)")
+    else:
+        st.sidebar.info("⏳ Association Rules (Pending)")
     st.sidebar.info("⏳ Revenue Prediction (Training)")
-    st.sidebar.info("⏳ Recommendations (Pending)")
 
 # ============================================================================
 # PAGE 1: EXECUTIVE DASHBOARD
@@ -526,14 +542,33 @@ elif page == "👥 Customer Segments":
 # PAGE 4: BUNDLE RECOMMENDATIONS
 # ============================================================================
 elif page == "🔗 Bundle Recommendations":
-    st.header("Strategic Pizza Bundle Recommendations")
-    st.markdown("Market basket analysis reveals high-value pizza combinations for cross-selling and combo deals.")
+    st.header("Strategic Pizza Bundle Recommendations - Machine Learning")
+    st.markdown("**ML-powered product recommendations** using Association Rule Mining (Apriori algorithm)")
 
-    # Top Bundles
-    st.subheader("Top Bundle Opportunities")
+    # Check if ML association rules are available
+    if models and 'association_rules' in models and len(models['association_rules']) > 0:
+        # Display ML model info
+        assoc_config = models['association_config']
 
-    # Parse bundle data and calculate co-purchase frequency
-    rules_display = data['association_rules'].copy()
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Algorithm", assoc_config['model_type'])
+        with col2:
+            st.metric("Total Rules", assoc_config['num_rules'])
+        with col3:
+            st.metric("Avg Lift", f"{assoc_config['metrics']['avg_lift']:.4f}")
+        with col4:
+            st.metric("Avg Confidence", f"{assoc_config['metrics']['avg_confidence']:.4f}")
+
+        st.markdown("---")
+        st.subheader("Top Bundle Opportunities")
+
+        # Use ML-generated rules
+        rules_display = models['association_rules'].copy()
+    else:
+        st.warning("ML association rules not yet deployed. Showing analysis from historical data.")
+        # Parse bundle data and calculate co-purchase frequency
+        rules_display = data['association_rules'].copy()
 
     # Calculate total orders for frequency calculation
     total_orders = data['transactions']['order_id'].nunique() if 'transactions' in data else 10000
