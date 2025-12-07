@@ -1,0 +1,15 @@
+{
+  "algorithm": "FP-Growth",
+  "params": {
+    "algorithm": "FP-Growth",
+    "metric": "lift",
+    "min_support": "0.005",
+    "min_threshold": "0.5"
+  },
+  "metrics": {
+    "avg_lift": 1.0928632698499774,
+    "rules_count": null
+  },
+  "run_id": "3761509e115442b48e773e1681591dbc",
+  "rules_path": "D:\\classes asu\\MS-AIB\\CIS 508\\Term project\\pizza_intelligence_platform\\pizza-intelligence\\outputs\\models\\production\\association_rules.csv"
+}

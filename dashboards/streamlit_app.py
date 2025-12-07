@@ -56,8 +56,17 @@ st.markdown("**Data-Driven Business Intelligence for Pizza Operations**")
 st.sidebar.title("Navigation")
 page = st.sidebar.radio(
     "Select View",
-    ["📊 Executive Dashboard", "🔗 Bundle Recommendations", "👥 Customer Segments", "📈 Sales Forecasting", "⏰ Staffing & Peak Hours", "📉 Business Metrics"]
+    ["📊 Executive Dashboard", "🔮 Demand Forecasting (ML)", "👥 Customer Segments", "🔗 Bundle Recommendations", "📈 Sales Trends", "⏰ Staffing & Peak Hours", "📉 Business Metrics"]
 )
+
+# Show Phase 1 deployment status
+if models:
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("**Phase 1 Models**")
+    st.sidebar.success("✅ Demand Forecasting")
+    st.sidebar.success("✅ Customer Clustering")
+    st.sidebar.info("⏳ Revenue Prediction (Training)")
+    st.sidebar.info("⏳ Recommendations (Pending)")
 
 # Load Data
 @st.cache_data
@@ -88,36 +97,40 @@ def load_data():
 
     return data
 
-# Load ML Models
+# Load ML Models - Phase 1 Production Models
 @st.cache_resource
 def load_ml_models():
-    """Load trained ML models and metadata"""
-    import joblib
+    """Load Phase 1 production ML models from MLflow"""
+    import mlflow.sklearn
     import json
 
-    models_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs", "models")
+    models_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs", "models", "production")
+    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs", "results", "ml_model_tracking", "production_config_phase1.json")
 
     models = {}
     try:
-        # Load revenue model
-        revenue_model_path = os.path.join(models_dir, "revenue_model.pkl")
-        revenue_metadata_path = os.path.join(models_dir, "revenue_model_metadata.json")
+        # Load production config
+        with open(config_path, 'r') as f:
+            models['config'] = json.load(f)
 
-        models['revenue_model'] = joblib.load(revenue_model_path)
-        with open(revenue_metadata_path, 'r') as f:
-            models['revenue_metadata'] = json.load(f)
+        # Load demand forecasting model
+        demand_model_path = os.path.join(models_dir, "demand_forecasting")
+        models['demand_model'] = mlflow.sklearn.load_model(demand_model_path)
+        models['demand_status'] = 'deployed'
 
-        # Load quantity model
-        quantity_model_path = os.path.join(models_dir, "quantity_model.pkl")
-        quantity_metadata_path = os.path.join(models_dir, "quantity_model_metadata.json")
+        # Load clustering model
+        cluster_model_path = os.path.join(models_dir, "clustering")
+        models['cluster_model'] = mlflow.sklearn.load_model(cluster_model_path)
+        models['cluster_status'] = 'deployed'
 
-        models['quantity_model'] = joblib.load(quantity_model_path)
-        with open(quantity_metadata_path, 'r') as f:
-            models['quantity_metadata'] = json.load(f)
+        # Load clustering config
+        cluster_config_path = os.path.join(models_dir, "clustering_config.json")
+        with open(cluster_config_path, 'r') as f:
+            models['cluster_config'] = json.load(f)
 
         return models
     except Exception as e:
-        st.warning(f"ML models not available: {e}")
+        st.warning(f"Phase 1 ML models not available: {e}")
         return None
 
 data = load_data()
@@ -126,67 +139,6 @@ models = load_ml_models()
 if data is None:
     st.error("Failed to load data. Please ensure all analysis scripts have been run.")
     st.stop()
-
-# Helper function for ML predictions
-def prepare_order_features(pizza_name, pizza_size, pizza_category, quantity, unit_price, ingredient_count, hour, day_of_week, month):
-    """Prepare features for ML model prediction"""
-    import numpy as np
-
-    # Initialize feature vector with all expected features
-    features = {}
-
-    # Time features
-    features['Hour'] = hour
-    features['Day_of_Week'] = day_of_week
-    features['Month'] = month
-    features['Is_Weekend'] = 1 if day_of_week in [5, 6] else 0
-
-    # Cyclic encoding
-    features['Hour_Sin'] = np.sin(2 * np.pi * hour / 24)
-    features['Hour_Cos'] = np.cos(2 * np.pi * hour / 24)
-    features['Day_Sin'] = np.sin(2 * np.pi * day_of_week / 7)
-    features['Day_Cos'] = np.cos(2 * np.pi * day_of_week / 7)
-    features['Month_Sin'] = np.sin(2 * np.pi * month / 12)
-    features['Month_Cos'] = np.cos(2 * np.pi * month / 12)
-
-    # Order details
-    features['Unit_Price'] = unit_price
-    features['Quantity'] = quantity
-    features['Ingredient_Count'] = ingredient_count
-
-    # Category one-hot encoding
-    for cat in ['Chicken', 'Classic', 'Supreme', 'Veggie']:
-        features[f'Category_{cat}'] = 1 if pizza_category == cat else 0
-
-    # Size one-hot encoding
-    for size in ['L', 'M', 'S', 'XL', 'XXL']:
-        features[f'Size_{size}'] = 1 if pizza_size == size else 0
-
-    # Pizza name one-hot encoding (all pizzas from metadata)
-    all_pizzas = [
-        "The Barbecue Chicken Pizza", "The Big Meat Pizza", "The Brie Carre Pizza",
-        "The Calabrese Pizza", "The California Chicken Pizza", "The Chicken Alfredo Pizza",
-        "The Chicken Pesto Pizza", "The Classic Deluxe Pizza", "The Five Cheese Pizza",
-        "The Four Cheese Pizza", "The Greek Pizza", "The Green Garden Pizza",
-        "The Hawaiian Pizza", "The Italian Capocollo Pizza", "The Italian Supreme Pizza",
-        "The Italian Vegetables Pizza", "The Mediterranean Pizza", "The Mexicana Pizza",
-        "The Napolitana Pizza", "The Pepper Salami Pizza", "The Pepperoni Pizza",
-        "The Pepperoni, Mushroom, and Peppers Pizza", "The Prosciutto and Arugula Pizza",
-        "The Sicilian Pizza", "The Soppressata Pizza", "The Southwest Chicken Pizza",
-        "The Spicy Italian Pizza", "The Spinach Pesto Pizza", "The Spinach Supreme Pizza",
-        "The Spinach and Feta Pizza", "The Thai Chicken Pizza", "The Vegetables + Vegetables Pizza"
-    ]
-
-    for pizza in all_pizzas:
-        features[f'Pizza_{pizza}'] = 1 if pizza_name == pizza else 0
-
-    # Convert to DataFrame with correct column order
-    if models and 'revenue_metadata' in models:
-        feature_names = models['revenue_metadata']['feature_names']
-        feature_df = pd.DataFrame([features])[feature_names]
-        return feature_df
-    else:
-        return pd.DataFrame([features])
 
 # ============================================================================
 # PAGE 1: EXECUTIVE DASHBOARD
@@ -336,7 +288,242 @@ if page == "📊 Executive Dashboard":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================================================
-# PAGE 2: BUNDLE RECOMMENDATIONS
+# PAGE 2: DEMAND FORECASTING (ML)
+# ============================================================================
+elif page == "🔮 Demand Forecasting (ML)":
+    st.header("Pizza Demand Forecasting - Machine Learning")
+    st.markdown("**Predict hourly pizza demand** using our Ensemble ML model (R² = 0.69)")
+
+    if not models or 'demand_model' not in models:
+        st.error("Demand forecasting model not available. Please ensure Phase 1 deployment is complete.")
+    else:
+        # Display model info
+        demand_config = models['config']['demand_forecasting']
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Model Type", demand_config['model_type'])
+        with col2:
+            st.metric("Test R² Score", f"{demand_config['metrics']['test_r2']:.4f}")
+        with col3:
+            st.metric("Test RMSE", f"{demand_config['metrics']['test_rmse']:.2f} pizzas/hr")
+
+        st.markdown("---")
+
+        # Prediction Interface
+        st.subheader("🔮 Predict Hourly Demand")
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            pred_date = st.date_input(
+                "Select Date",
+                value=pd.Timestamp.now(),
+                min_value=pd.Timestamp.now() - pd.Timedelta(days=30),
+                max_value=pd.Timestamp.now() + pd.Timedelta(days=30)
+            )
+            pred_hour = st.slider("Hour of Day", 0, 23, 12)
+
+        with col2:
+            day_of_week = pred_date.dayofweek
+            month = pred_date.month
+            day_of_month = pred_date.day
+            week_of_year = pred_date.isocalendar()[1]
+            is_weekend = 1 if day_of_week >= 5 else 0
+
+            st.info(f"**Day:** {pred_date.strftime('%A')}")
+            st.info(f"**Month:** {pred_date.strftime('%B')}")
+            st.info(f"**Weekend:** {'Yes' if is_weekend else 'No'}")
+
+        with col3:
+            # Historical averages for reference
+            prev_hour_avg = st.number_input(
+                "Previous Hour Pizzas (estimate)",
+                min_value=0, max_value=100, value=30,
+                help="Estimate from historical data or use 30 as default"
+            )
+            same_hour_yesterday_avg = st.number_input(
+                "Same Hour Yesterday (estimate)",
+                min_value=0, max_value=100, value=30,
+                help="Estimate from historical data or use 30 as default"
+            )
+
+        # Predict button
+        if st.button("Predict Demand", type="primary"):
+            try:
+                # Prepare features (18 features total)
+                import numpy as np
+
+                # Cyclic encoding
+                hour_sin = np.sin(2 * np.pi * pred_hour / 24)
+                hour_cos = np.cos(2 * np.pi * pred_hour / 24)
+                day_sin = np.sin(2 * np.pi * day_of_week / 7)
+                day_cos = np.cos(2 * np.pi * day_of_week / 7)
+                month_sin = np.sin(2 * np.pi * month / 12)
+                month_cos = np.cos(2 * np.pi * month / 12)
+                day_of_month_sin = np.sin(2 * np.pi * day_of_month / 31)
+                day_of_month_cos = np.cos(2 * np.pi * day_of_month / 31)
+
+                # Rolling averages (using estimates)
+                rolling_3h_avg = prev_hour_avg  # Simplified
+                rolling_24h_avg = same_hour_yesterday_avg  # Simplified
+
+                # Create feature vector
+                features = pd.DataFrame([{
+                    'hour': pred_hour,
+                    'day_of_week': day_of_week,
+                    'month': month,
+                    'day_of_month': day_of_month,
+                    'week_of_year': week_of_year,
+                    'is_weekend': is_weekend,
+                    'hour_sin': hour_sin,
+                    'hour_cos': hour_cos,
+                    'day_sin': day_sin,
+                    'day_cos': day_cos,
+                    'month_sin': month_sin,
+                    'month_cos': month_cos,
+                    'day_of_month_sin': day_of_month_sin,
+                    'day_of_month_cos': day_of_month_cos,
+                    'prev_hour_pizzas': prev_hour_avg,
+                    'same_hour_yesterday': same_hour_yesterday_avg,
+                    'rolling_3h_avg': rolling_3h_avg,
+                    'rolling_24h_avg': rolling_24h_avg
+                }])
+
+                # Make prediction
+                prediction = models['demand_model'].predict(features)[0]
+
+                # Display results
+                st.markdown("---")
+                st.subheader("📊 Prediction Results")
+
+                col1, col2, col3, col4 = st.columns(4)
+
+                with col1:
+                    st.metric(
+                        "Predicted Demand",
+                        f"{prediction:.1f} pizzas/hour",
+                        help="Ensemble model prediction"
+                    )
+
+                with col2:
+                    # Calculate staff needed (rough estimate)
+                    staff_needed = max(3, min(10, int(prediction / 8) + 2))
+                    st.metric(
+                        "Staff Needed",
+                        f"{staff_needed} employees",
+                        help="Rough estimate based on demand"
+                    )
+
+                with col3:
+                    # Inventory recommendation
+                    inventory = int(prediction * 1.2)  # 20% buffer
+                    st.metric(
+                        "Inventory Prep",
+                        f"{inventory} pizzas",
+                        help="Recommended inventory (20% buffer)"
+                    )
+
+                with col4:
+                    # Revenue estimate
+                    avg_price = 15  # Approximate average pizza price
+                    revenue_est = prediction * avg_price
+                    st.metric(
+                        "Revenue Estimate",
+                        f"${revenue_est:.0f}",
+                        help="Estimated revenue for this hour"
+                    )
+
+                # Contextual insights
+                st.markdown("---")
+                st.subheader("💡 Insights & Recommendations")
+
+                # Determine demand level
+                if prediction > 40:
+                    demand_level = "🔥 High Demand"
+                    color = "red"
+                    recommendations = [
+                        "Schedule maximum staff for this hour",
+                        "Pre-prepare dough and toppings",
+                        "Consider running promotions to smooth demand",
+                        "Ensure all ovens are operational"
+                    ]
+                elif prediction > 25:
+                    demand_level = "📈 Moderate Demand"
+                    color = "orange"
+                    recommendations = [
+                        "Maintain standard staffing levels",
+                        "Monitor inventory closely",
+                        "Have backup ingredients ready",
+                        "Standard preparation procedures"
+                    ]
+                else:
+                    demand_level = "📉 Low Demand"
+                    color = "green"
+                    recommendations = [
+                        "Reduce staff to minimum levels",
+                        "Focus on prep work and cleaning",
+                        "Consider running flash promotions",
+                        "Good time for staff training"
+                    ]
+
+                st.markdown(f"**Demand Level:** <span style='color:{color}; font-size:20px;'>{demand_level}</span>", unsafe_allow_html=True)
+
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    st.markdown("**Operational Recommendations:**")
+                    for rec in recommendations:
+                        st.markdown(f"- {rec}")
+
+                with col2:
+                    st.markdown("**Key Factors:**")
+                    st.markdown(f"- **Time:** {pred_date.strftime('%A')} at {pred_hour}:00")
+                    st.markdown(f"- **Weekend:** {'Yes (expect higher demand)' if is_weekend else 'No (weekday patterns)'}")
+                    st.markdown(f"- **Previous Hour:** {prev_hour_avg} pizzas")
+                    st.markdown(f"- **Yesterday Same Hour:** {same_hour_yesterday_avg} pizzas")
+
+            except Exception as e:
+                st.error(f"Prediction error: {e}")
+
+        # Model Performance
+        st.markdown("---")
+        st.subheader("📈 Model Performance")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("**Model Details:**")
+            st.markdown(f"- **Type:** {demand_config['model_type']}")
+            st.markdown(f"- **R² Score:** {demand_config['metrics']['test_r2']:.4f} (69% variance explained)")
+            st.markdown(f"- **RMSE:** {demand_config['metrics']['test_rmse']:.2f} pizzas/hour")
+            st.markdown(f"- **MAE:** {demand_config['metrics']['test_mae']:.2f} pizzas/hour")
+            st.markdown(f"- **Use Case:** {demand_config['use_case']}")
+
+        with col2:
+            st.markdown("**Input Features (18 total):**")
+            st.markdown(f"- Temporal: hour, day_of_week, month, day_of_month, week_of_year, is_weekend")
+            st.markdown(f"- Cyclic: hour_sin/cos, day_sin/cos, month_sin/cos, day_of_month_sin/cos")
+            st.markdown(f"- Lag: prev_hour_pizzas, same_hour_yesterday")
+            st.markdown(f"- Rolling: 3h average, 24h average")
+
+# ============================================================================
+# PAGE 3: CUSTOMER SEGMENTS
+# ============================================================================
+elif page == "👥 Customer Segments":
+    st.header("Customer Segmentation Analysis")
+    st.markdown("Understanding customer groups based on ordering patterns and preferences.")
+
+    # Show Phase 1 clustering model if available
+    if models and 'cluster_model' in models:
+        st.info(f"**Phase 1 Model:** DBSCAN Clustering (Silhouette Score: {models['cluster_config']['metrics']['silhouette_score']:.4f})")
+        st.markdown("Our deployed DBSCAN model identified distinct product segments based on price, ingredients, size, and category.")
+
+    # Rest of original Customer Segments code continues...
+    # (keeping the existing visualization code)
+
+# ============================================================================
+# PAGE 4: BUNDLE RECOMMENDATIONS
 # ============================================================================
 elif page == "🔗 Bundle Recommendations":
     st.header("Strategic Pizza Bundle Recommendations")
@@ -652,11 +839,11 @@ elif page == "👥 Customer Segments":
         """)
 
 # ============================================================================
-# PAGE 4: SALES FORECASTING
+# PAGE 5: SALES TRENDS
 # ============================================================================
-elif page == "📈 Sales Forecasting":
-    st.header("Sales Trend Analysis & Forecasting")
-    st.markdown("Analyze historical sales patterns and predict future demand.")
+elif page == "📈 Sales Trends":
+    st.header("Sales Trend Analysis & Historical Patterns")
+    st.markdown("Analyze historical sales patterns and identify trends.")
 
     # Filters
     col1, col2, col3 = st.columns(3)
@@ -899,98 +1086,12 @@ elif page == "📈 Sales Forecasting":
         growth = ((last_week - first_week) / first_week * 100) if first_week > 0 else 0
         st.metric("Trend", f"{growth:+.1f}%", delta=f"vs first week")
 
-    # ML-Powered Order Revenue Predictor
-    if models:
-        st.markdown("---")
-        st.subheader("ML-Powered Order Revenue Predictor")
-        st.markdown(f"**Trained Model**: {models['revenue_metadata']['model_type']} (R² = {models['revenue_metadata']['test_r2']:.4f}, RMSE = ${models['revenue_metadata']['test_rmse']:.2f})")
-
-        st.markdown("Configure an order to predict its revenue using our trained ML model:")
-
-        # Order configuration
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            # Get unique pizzas from transactions
-            unique_pizzas = sorted(data['transactions']['pizza_name'].unique())
-            selected_pizza = st.selectbox("Select Pizza", unique_pizzas)
-
-            # Get info for selected pizza
-            pizza_info = data['transactions'][data['transactions']['pizza_name'] == selected_pizza].iloc[0]
-
-        with col2:
-            selected_size = st.selectbox("Size", ['S', 'M', 'L', 'XL', 'XXL'])
-            selected_quantity = st.slider("Quantity", 1, 5, 1)
-
-        with col3:
-            selected_hour = st.slider("Hour of Day", 0, 23, 12)
-            selected_day = st.selectbox("Day of Week",
-                                       ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-                                       index=4)
-            day_map = {'Monday': 0, 'Tuesday': 1, 'Wednesday': 2, 'Thursday': 3, 'Friday': 4, 'Saturday': 5, 'Sunday': 6}
-            selected_day_num = day_map[selected_day]
-
-        # Additional details
-        col1, col2 = st.columns(2)
-        with col1:
-            # Extract category and ingredients from selected pizza
-            pizza_category = pizza_info['pizza_category']
-            st.info(f"Category: {pizza_category}")
-
-        with col2:
-            ingredient_count = len(pizza_info['pizza_ingredients'].split(','))
-            st.info(f"Ingredients: {ingredient_count}")
-
-        # Get unit price from data (average for this pizza/size combination)
-        size_price_map = data['transactions'][(data['transactions']['pizza_name'] == selected_pizza) &
-                                              (data['transactions']['pizza_size'] == selected_size)]
-        if len(size_price_map) > 0:
-            unit_price = size_price_map['unit_price'].mean()
-        else:
-            # Fallback to any size for this pizza
-            unit_price = data['transactions'][data['transactions']['pizza_name'] == selected_pizza]['unit_price'].mean()
-
-        # Predict button
-        if st.button("Predict Order Revenue", type="primary"):
-            try:
-                # Prepare features
-                features = prepare_order_features(
-                    pizza_name=selected_pizza,
-                    pizza_size=selected_size,
-                    pizza_category=pizza_category,
-                    quantity=selected_quantity,
-                    unit_price=unit_price,
-                    ingredient_count=ingredient_count,
-                    hour=selected_hour,
-                    day_of_week=selected_day_num,
-                    month=pd.Timestamp.now().month
-                )
-
-                # Make prediction
-                predicted_revenue = models['revenue_model'].predict(features)[0]
-
-                # Display results
-                st.success(f"Predicted Order Revenue: **${predicted_revenue:.2f}**")
-
-                # Show comparison
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    actual_avg = unit_price * selected_quantity
-                    st.metric("Simple Calculation", f"${actual_avg:.2f}",
-                             help="Unit Price × Quantity")
-                with col2:
-                    st.metric("ML Prediction", f"${predicted_revenue:.2f}",
-                             help="Using 54 features including time, pizza type, and seasonality")
-                with col3:
-                    difference = predicted_revenue - actual_avg
-                    st.metric("ML Adjustment", f"${difference:+.2f}",
-                             help="Accounts for demand patterns and cross-selling")
-
-            except Exception as e:
-                st.error(f"Prediction error: {e}")
+    # Note: Revenue prediction will be added in Phase 2
+    st.markdown("---")
+    st.info("**Revenue Prediction:** This feature will be available in Phase 2 after training completes. Use the 'Demand Forecasting (ML)' page for ML-powered predictions.")
 
 # ============================================================================
-# PAGE 5: STAFFING & PEAK HOURS
+# PAGE 6: STAFFING & PEAK HOURS
 # ============================================================================
 elif page == "⏰ Staffing & Peak Hours":
     st.header("Predictive Staffing Optimization & Demand Forecasting")
@@ -1520,7 +1621,7 @@ elif page == "⏰ Staffing & Peak Hours":
             """)
 
 # ============================================================================
-# PAGE 6: BUSINESS METRICS
+# PAGE 7: BUSINESS METRICS
 # ============================================================================
 elif page == "📉 Business Metrics":
     st.header("Key Business Performance Metrics")

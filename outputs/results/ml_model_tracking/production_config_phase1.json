@@ -1,0 +1,80 @@
+{
+  "deployment_phase": 1,
+  "deployment_date": "2025-12-07",
+  "models_deployed": 2,
+  "models_pending": 2,
+
+  "demand_forecasting": {
+    "status": "deployed",
+    "model_type": "Ensemble",
+    "model_path": "outputs/models/production/demand_forecasting",
+    "description": "Predicts hourly pizza demand (1-64 pizzas/hour)",
+    "metrics": {
+      "test_r2": 0.6923,
+      "test_rmse": 4.53,
+      "test_mae": 3.56
+    },
+    "input_features": [
+      "hour", "day_of_week", "month", "day_of_month", "week_of_year", "is_weekend",
+      "hour_sin", "hour_cos", "day_sin", "day_cos", "month_sin", "month_cos",
+      "day_of_month_sin", "day_of_month_cos",
+      "prev_hour_pizzas", "same_hour_yesterday", "rolling_3h_avg", "rolling_24h_avg"
+    ],
+    "output": "total_pizzas (hourly aggregate)",
+    "use_case": "Inventory planning, staffing optimization"
+  },
+
+  "clustering": {
+    "status": "deployed",
+    "algorithm": "DBSCAN",
+    "model_path": "outputs/models/production/clustering",
+    "config_path": "outputs/models/production/clustering_config.json",
+    "description": "Customer segmentation based on product attributes",
+    "metrics": {
+      "silhouette_score": 0.8305
+    },
+    "parameters": {
+      "eps": 0.5,
+      "min_samples": 2,
+      "metric": "manhattan"
+    },
+    "input_features": [
+      "unit_price", "ingredient_count", "size_encoded", "category_encoded"
+    ],
+    "output": "cluster_labels",
+    "use_case": "Product categorization, menu optimization"
+  },
+
+  "revenue_prediction": {
+    "status": "pending",
+    "reason": "Training in progress (6 models × 8 configs + 8 ensembles = 56 runs)",
+    "expected_completion": "Shortly after current training completes",
+    "target": "total_price (revenue per order)",
+    "planned_features": 53
+  },
+
+  "association_rules": {
+    "status": "pending",
+    "reason": "Rules exist in CSV but not logged to MLflow",
+    "champion_params": {
+      "algorithm": "Apriori",
+      "min_support": 0.005,
+      "metric": "lift",
+      "rules_count": 460,
+      "avg_lift": 1.0929
+    },
+    "use_case": "Product recommendations, cross-selling"
+  },
+
+  "deployment_notes": {
+    "phase_1": "Demand forecasting and clustering ready for Streamlit integration",
+    "phase_2": "Add revenue prediction when training completes",
+    "phase_3": "Generate and deploy association rules",
+    "streamlit_integration": {
+      "demand_tab": "Load model from outputs/models/production/demand_forecasting",
+      "clustering_tab": "Load model from outputs/models/production/clustering",
+      "revenue_tab": "Show 'Training in progress' message",
+      "recommendations_tab": "Show 'Coming soon' message"
+    }
+  }
+}

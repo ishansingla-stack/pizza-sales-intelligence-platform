@@ -35,8 +35,8 @@ print("\n" + "=" * 80)
 print("STEP 1: LOAD TRAINING DATA")
 print("=" * 80)
 
-# Load REVENUE data (from refactored folder - where revenue models were trained)
-revenue_data_dir = Path(project_root) / "data" / "processed" / "refactored"
+# Load REVENUE data (from revenue_target folder - CLEAN DATA, no Quantity leakage)
+revenue_data_dir = Path(project_root) / "data" / "processed" / "revenue_target"
 X_train_revenue = pd.read_parquet(revenue_data_dir / "X_train.parquet")
 X_val_revenue = pd.read_parquet(revenue_data_dir / "X_val.parquet")
 X_test_revenue = pd.read_parquet(revenue_data_dir / "X_test.parquet")

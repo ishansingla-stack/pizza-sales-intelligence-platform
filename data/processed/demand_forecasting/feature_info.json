@@ -1,0 +1,29 @@
+{
+  "feature_columns": [
+    "hour",
+    "day_of_week",
+    "month",
+    "day_of_month",
+    "week_of_year",
+    "is_weekend",
+    "hour_sin",
+    "hour_cos",
+    "day_sin",
+    "day_cos",
+    "month_sin",
+    "month_cos",
+    "day_of_month_sin",
+    "day_of_month_cos",
+    "prev_hour_pizzas",
+    "same_hour_yesterday",
+    "rolling_3h_avg",
+    "rolling_24h_avg"
+  ],
+  "n_features": 18,
+  "target": "total_pizzas",
+  "train_samples": 2916,
+  "val_samples": 624,
+  "test_samples": 626,
+  "description": "Demand forecasting - predicts total hourly pizza demand",
+  "note": "Chronological split for time series"
+}

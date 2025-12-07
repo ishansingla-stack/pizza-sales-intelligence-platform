@@ -1,9 +1,9 @@
 """
 Sales Prediction - Regression Training Pipeline
 - Target: total_price (revenue)
-- 10 Regression Models (including Ridge, Lasso, ElasticNet)
+- 6 Regression Models: DecisionTree, LinearRegression, NeuralNetwork, RandomForest, XGBoost, KNN
 - 3 hyperparameters per model × 2 values each = 8 configurations
-- Total: 10 models × 8 configs = 80 runs
+- Total: 6 models × 8 configs + 8 ensembles = 56 runs
 - Validation Set for Hyperparameter Selection
 - Dynamic MLflow Run Naming
 """
@@ -12,7 +12,11 @@ import sys
 import os
 from pathlib import Path
 
-project_root = Path(__file__).parent.parent
+# Get project root (when running with -m, use cwd)
+if __name__ == "__main__":
+    project_root = Path(os.getcwd())
+else:
+    project_root = Path(__file__).parent.parent.parent
 sys.path.append(str(project_root))
 
 import pandas as pd
@@ -21,8 +25,7 @@ from datetime import datetime
 import mlflow
 import mlflow.sklearn
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
-from sklearn.svm import SVR
+from sklearn.linear_model import LinearRegression
 from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import RandomForestRegressor, VotingRegressor
 from xgboost import XGBRegressor
@@ -55,7 +58,7 @@ print("\n" + "=" * 80)
 print("STEP 1: LOAD PROCESSED DATA (80-10-10 SPLIT)")
 print("=" * 80)
 
-data_dir = Path(project_root) / "data" / "processed" / "refactored"
+data_dir = Path(project_root) / "data" / "processed" / "revenue_target"
 
 X_train = pd.read_parquet(data_dir / "X_train.parquet")
 X_val = pd.read_parquet(data_dir / "X_val.parquet")
@@ -91,14 +94,6 @@ model_configs = {
             "copy_X": [True, False]  # 3rd parameter
         }
     },
-    "SVR": {
-        "model_class": SVR,
-        "hyperparameters": {
-            "C": [1.0, 10.0],
-            "epsilon": [0.1, 0.2],
-            "kernel": ['rbf', 'linear']
-        }
-    },
     "NeuralNetwork": {
         "model_class": MLPRegressor,
         "hyperparameters": {
@@ -130,30 +125,6 @@ model_configs = {
             "weights": ['uniform', 'distance'],
             "p": [1, 2]
         }
-    },
-    "Ridge": {
-        "model_class": Ridge,
-        "hyperparameters": {
-            "alpha": [0.1, 1.0],
-            "fit_intercept": [True, False],
-            "solver": ['auto', 'svd']
-        }
-    },
-    "Lasso": {
-        "model_class": Lasso,
-        "hyperparameters": {
-            "alpha": [0.1, 1.0],
-            "fit_intercept": [True, False],
-            "max_iter": [1000, 5000]
-        }
-    },
-    "ElasticNet": {
-        "model_class": ElasticNet,
-        "hyperparameters": {
-            "alpha": [0.1, 1.0],
-            "l1_ratio": [0.3, 0.7],
-            "max_iter": [1000, 5000]
-        }
     }
 }
 
@@ -167,7 +138,7 @@ for model_name, config in model_configs.items():
 
 total_runs = sum(len(list(itertools.product(*config["hyperparameters"].values())))
                  for config in model_configs.values())
-print(f"\n[*] Total runs: {total_runs} (10 models × 8 configs)")
+print(f"\n[*] Total runs: {total_runs} base models + 8 ensembles = {total_runs + 8} total")
 
 #%% Helper Functions
 def evaluate_model(model, X, y, dataset_name=""):
@@ -279,113 +250,126 @@ for model_name, config in model_configs.items():
 
     print(f"\n[BEST {model_name}] Val RMSE: {best_val_rmse:.4f} | Params: {best_params}")
 
-#%% Ensemble Model
+#%% Ensemble Models - 8 Configurations
 print("\n" + "=" * 80)
-print("ENSEMBLE: Build from Top 3 Diverse Models (Weighted by Val RMSE)")
+print("ENSEMBLE: 8 Configurations (Top 3 or 5 Models, Weighted/Uniform)")
 print("=" * 80)
 
 results_df = pd.DataFrame(all_results)
 
-# Get top models, ensuring diversity (different model types)
-print(f"\n[*] Selecting top 3 diverse models by validation RMSE...")
-selected_models = []
-seen_model_types = set()
+# Get top 5 models by validation R²
+top_models = results_df.nlargest(5, 'val_r2')
 
-for idx, row in results_df.nsmallest(len(results_df), 'val_rmse').iterrows():
-    model_type = row['model_name']
-    if model_type not in seen_model_types:
-        selected_models.append(row)
-        seen_model_types.add(model_type)
-        if len(selected_models) == 3:
-            break
+print(f"\n[*] Top 5 models for ensemble:")
+for idx, row in top_models.iterrows():
+    print(f"  {row['model_name']:20s} | Val R²: {row['val_r2']:.4f}, Val RMSE: {row['val_rmse']:.4f}")
 
-top_3 = pd.DataFrame(selected_models)
+# Ensemble configurations - 8 ensembles with different combinations
+ensemble_configs = {
+    "n_estimators": [3, 5],  # Use top 3 or top 5 models
+    "weights": ['uniform', 'inverse_rmse'],  # Equal vs weighted by performance
+    "div_by_std": [False, True]  # Whether to divide weights by std
+}
 
-print(f"\n[*] Top 3 diverse models for ensemble:")
-for idx, row in top_3.iterrows():
-    print(f"  {row['model_name']:20s} | Val RMSE: {row['val_rmse']:.4f}")
+ensemble_param_combos = list(itertools.product(*ensemble_configs.values()))
 
-# Calculate weights based on inverse RMSE (better models get higher weight)
-epsilon = 1e-10
-weights = []
-ensemble_estimators = []
-ensemble_model_names = []
+for ens_idx, (n_est, weight_type, div_std) in enumerate(ensemble_param_combos, 1):
+    print(f"\n[{ens_idx}/8] Ensemble #{ens_idx} - n={n_est}, weights={weight_type}, div_std={div_std}")
 
-for idx, row in top_3.iterrows():
-    model_name = row['model_name']
-    val_rmse = row['val_rmse']
+    # Select top N models
+    selected = top_models.head(n_est)
 
-    # Calculate weight as inverse of RMSE
-    weight = 1.0 / (val_rmse + epsilon)
-    weights.append(weight)
+    # Create base estimators (retrain with same hyperparams)
+    estimators = []
+    for idx, row in selected.iterrows():
+        model_name = row['model_name']
+        model_class = model_configs[model_name]["model_class"]
 
-    # Dynamically create model with discovered hyperparameters
-    model_class = model_configs[model_name]["model_class"]
+        # Extract hyperparameters from the row
+        param_names = list(model_configs[model_name]["hyperparameters"].keys())
+        params_dict = {param: row[param] for param in param_names if param in row}
 
-    # Extract hyperparameters from the row
-    param_names = list(model_configs[model_name]["hyperparameters"].keys())
-    params = {param: row[param] for param in param_names if param in row}
+        # Convert float params to int for models that need it
+        if model_name == "XGBoost":
+            if 'n_estimators' in params_dict:
+                params_dict['n_estimators'] = int(params_dict['n_estimators'])
+            if 'max_depth' in params_dict:
+                params_dict['max_depth'] = int(params_dict['max_depth'])
+            params_dict['random_state'] = 42
+            params_dict['verbosity'] = 0
+        elif model_name in ["RandomForest", "DecisionTree"]:
+            if 'n_estimators' in params_dict:
+                params_dict['n_estimators'] = int(params_dict['n_estimators'])
+            if 'max_depth' in params_dict:
+                params_dict['max_depth'] = int(params_dict['max_depth'])
+            if 'min_samples_split' in params_dict:
+                params_dict['min_samples_split'] = int(params_dict['min_samples_split'])
+            if 'min_samples_leaf' in params_dict:
+                params_dict['min_samples_leaf'] = int(params_dict['min_samples_leaf'])
+            params_dict['random_state'] = 42
+        elif model_name == "NeuralNetwork":
+            params_dict['random_state'] = 42
 
-    # Add model-specific configurations
-    if model_name == "NeuralNetwork":
-        params['max_iter'] = 500
-        params['random_state'] = 42
-    elif model_name == "XGBoost":
-        params['random_state'] = 42
-        params['tree_method'] = 'auto'
-        params['verbosity'] = 0
-    elif model_name in ["RandomForest", "DecisionTree"]:
-        params['random_state'] = 42
+        base_model = model_class(**params_dict)
+        estimators.append((f"{model_name}_{idx}", base_model))
 
-    model = model_class(**params)
-    ensemble_estimators.append((f'{model_name.lower()}_{idx}', model))
-    ensemble_model_names.append(model_name)
+    # Calculate weights
+    if weight_type == 'uniform':
+        weights = None
+    elif weight_type == 'inverse_rmse':
+        rmse_vals = selected['val_rmse'].values
+        if div_std:
+            std_vals = selected['val_r2'].std()
+            weights = (1.0 / rmse_vals) / (std_vals + 1e-6)
+        else:
+            weights = 1.0 / rmse_vals
+        weights = weights / weights.sum()  # Normalize
 
-# Normalize weights to sum to 1
-weights = np.array(weights)
-weights = weights / weights.sum()
+    # Train ensemble
+    with mlflow.start_run(run_name=f"Ensemble_n{n_est}_{weight_type}_div{div_std}"):
+        start_time = time.time()
 
-print(f"\n[*] Ensemble weights (based on inverse validation RMSE):")
-for model_name, weight in zip(ensemble_model_names, weights):
-    print(f"  {model_name:20s}: {weight:.4f}")
+        mlflow.log_params({
+            "n_estimators": n_est,
+            "weight_type": weight_type,
+            "div_by_std": div_std
+        })
+        mlflow.log_param("model_type", "Ensemble")
 
-ensemble = VotingRegressor(estimators=ensemble_estimators, weights=weights)
+        ensemble = VotingRegressor(estimators=estimators, weights=weights)
+        ensemble.fit(X_train, y_train)
 
-with mlflow.start_run(run_name="Ensemble_VotingRegressor"):
-    start_time = time.time()
-    ensemble.fit(X_train, y_train)
-    training_time = time.time() - start_time
+        training_time = time.time() - start_time
 
-    train_metrics = evaluate_model(ensemble, X_train, y_train, "train")
-    val_metrics = evaluate_model(ensemble, X_val, y_val, "val")
-    test_metrics = evaluate_model(ensemble, X_test, y_test, "test")
+        # Evaluate
+        train_metrics = evaluate_model(ensemble, X_train, y_train, "train")
+        val_metrics = evaluate_model(ensemble, X_val, y_val, "val")
+        test_metrics = evaluate_model(ensemble, X_test, y_test, "test")
 
-    mlflow.log_param("model_type", "Ensemble")
-    mlflow.log_param("ensemble_models", "_".join(ensemble_model_names))
-    mlflow.log_param("ensemble_method", "WeightedVotingRegressor")
-    mlflow.log_param("selection_metric", "val_rmse")
-    for i, (model_name, weight) in enumerate(zip(ensemble_model_names, weights)):
-        mlflow.log_param(f"model_{i+1}", model_name)
-        mlflow.log_param(f"weight_{i+1}", float(weight))
-    mlflow.log_metric("training_time", training_time)
+        # Log
+        mlflow.log_metric("training_time", training_time)
+        for metric_dict in [train_metrics, val_metrics, test_metrics]:
+            for metric_name, metric_value in metric_dict.items():
+                mlflow.log_metric(metric_name, metric_value)
 
-    for metric_dict in [train_metrics, val_metrics, test_metrics]:
-        for metric_name, metric_value in metric_dict.items():
-            mlflow.log_metric(metric_name, metric_value)
+        mlflow.sklearn.log_model(ensemble, "model")
 
-    mlflow.sklearn.log_model(ensemble, "model")
+        all_results.append({
+            'model_name': 'Ensemble',
+            'config_num': ens_idx,
+            'run_name': f"Ensemble_n{n_est}_{weight_type}_div{div_std}",
+            'n_estimators': n_est,
+            'weight_type': weight_type,
+            'div_by_std': div_std,
+            'training_time': training_time,
+            **train_metrics,
+            **val_metrics,
+            **test_metrics
+        })
 
-    all_results.append({
-        'model_name': 'Ensemble',
-        'config_num': 1,
-        'run_name': 'Ensemble_VotingRegressor',
-        'training_time': training_time,
-        **train_metrics,
-        **val_metrics,
-        **test_metrics
-    })
+        print(f"   Test R²: {test_metrics['test_r2']:.4f}, RMSE: {test_metrics['test_rmse']:.2f}")
 
-    print(f"\n[OK] Ensemble | Val RMSE: {val_metrics['val_rmse']:.4f}")
+print(f"\n[OK] Completed 8 ensemble configurations")
 
 #%% Save Results
 print("\n" + "=" * 80)
