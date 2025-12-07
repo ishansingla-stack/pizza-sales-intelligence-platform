@@ -1,0 +1,22 @@
+{
+    "clustering": {
+        "algorithm": "DBSCAN",
+        "silhouette_score": 0.8305430230740423,
+        "params": {
+            "eps": 0.5,
+            "min_samples": 2,
+            "metric": "manhattan"
+        }
+    },
+    "association_rules": {
+        "algorithm": "Apriori",
+        "avg_lift": 1.0928632698499774,
+        "avg_confidence": 0.0907486043107653,
+        "rules_count": 460,
+        "params": {
+            "min_support": 0.005,
+            "metric": "lift",
+            "min_threshold": 0.3
+        }
+    }
+}

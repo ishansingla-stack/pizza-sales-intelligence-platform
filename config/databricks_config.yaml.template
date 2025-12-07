@@ -1,0 +1,53 @@
+# Databricks Configuration Template
+# Copy this file to 'databricks_config.yaml' and fill in your credentials
+# The .yaml file is gitignored for security
+#
+# ========================================
+# IMPORTANT: Choose your version below!
+# ========================================
+
+databricks:
+  # ========================================
+  # OPTION 1: Databricks Community Edition (FREE) - Recommended for students!
+  # ========================================
+  # Use this if you signed up at: https://community.cloud.databricks.com/
+  # Everything runs on your local machine, MLflow tracking is in Databricks
+  # NO CLUSTERS NEEDED!
+
+  host: "https://community.cloud.databricks.com"
+
+  # ========================================
+  # OPTION 2: Databricks Paid Version
+  # ========================================
+  # If you have a paid workspace, use your workspace URL instead:
+  # host: "https://adb-1234567890123456.7.azuredatabricks.net"
+  # host: "https://your-workspace.cloud.databricks.net"
+
+  # Personal Access Token (REQUIRED for both free and paid)
+  # Get from: User Settings → Developer → Access Tokens → Generate New Token
+  token: "YOUR_TOKEN_HERE"
+
+  # Cluster ID (ONLY for Databricks Connect - NOT NEEDED for local execution)
+  # Leave empty if running locally (recommended)
+  cluster_id: ""
+
+mlflow:
+  # MLflow experiment name (will be created if doesn't exist)
+  experiment_name: "/Users/your_email@example.com/pizza-intelligence"
+
+  # Model registry name
+  model_name: "pizza_sales_forecast"
+
+data:
+  # Local data path (runs on your machine)
+  local_data_path: "./data/raw/Data_Model_-_Pizza_Sales.xlsx"
+
+  # DBFS paths (when data is on Databricks)
+  dbfs_data_path: "/FileStore/tables/Data_Model_-_Pizza_Sales.xlsx"
+  dbfs_output_path: "/FileStore/pizza_intelligence/"
+
+paths:
+  # Local output directories
+  processed_data: "./data/processed/"
+  results: "./outputs/results/"
+  models: "./outputs/models/"

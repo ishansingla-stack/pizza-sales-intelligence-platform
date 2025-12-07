@@ -1,0 +1,33 @@
+pizza_name,unit_price,pizza_size,pizza_category,pizza_ingredients,ingredient_count,size_encoded,category_encoded,kmeans_cluster,dbscan_cluster,hier_cluster,gmm_cluster
+The Barbecue Chicken Pizza,17.57293423271501,L,Chicken,"Barbecued Chicken, Red Peppers, Green Peppers, Tomatoes, Red Onions, Barbecue Sauce",6,0,0,0,0,0,1
+The Big Meat Pizza,12.0,S,Classic,"Bacon, Pepperoni, Italian Sausage, Chorizo Sausage",4,2,1,1,-1,2,0
+The Brie Carre Pizza,23.65,S,Supreme,"Brie Carre Cheese, Prosciutto, Caramelized Onions, Pears, Thyme, Garlic",6,2,2,3,-1,1,2
+The Calabrese Pizza,17.005124056094928,M,Supreme,"慛duja Salami, Pancetta, Tomatoes, Red Onions, Friggitello Peppers, Garlic",6,1,2,2,1,0,2
+The California Chicken Pizza,17.448523023457863,M,Chicken,"Chicken, Artichoke, Spinach, Garlic, Jalapeno Peppers, Fontina Cheese, Gouda Cheese",7,1,0,0,-1,0,1
+The Chicken Alfredo Pizza,17.12142857142857,M,Chicken,"Chicken, Red Onions, Red Peppers, Mushrooms, Asiago Cheese, Alfredo Sauce",6,1,0,0,-1,0,1
+The Chicken Pesto Pizza,17.153746097814775,L,Chicken,"Chicken, Tomatoes, Red Peppers, Spinach, Garlic, Pesto Sauce",6,0,0,0,0,0,1
+The Classic Deluxe Pizza,15.575951986754967,M,Classic,"Pepperoni, Mushrooms, Red Onions, Red Peppers, Bacon",5,1,1,0,-1,0,1
+The Five Cheese Pizza,18.5,L,Veggie,"Mozzarella Cheese, Provolone Cheese, Smoked Gouda Cheese, Romano Cheese, Blue Cheese, Garlic",6,0,3,4,-1,0,2
+The Four Cheese Pizza,16.951945945945944,L,Veggie,"Ricotta Cheese, Gorgonzola Piccante Cheese, Mozzarella Cheese, Parmigiano Reggiano Cheese, Garlic",5,0,3,4,-1,0,2
+The Greek Pizza,20.035633001422475,XL,Classic,"Kalamata Olives, Feta Cheese, Tomatoes, Garlic, Beef Chuck Roast, Red Onions",6,3,1,3,-1,1,2
+The Green Garden Pizza,14.001519756838906,S,Veggie,"Spinach, Mushrooms, Tomatoes, Green Olives, Feta Cheese",5,2,3,2,-1,0,2
+The Hawaiian Pizza,13.317194092827004,S,Classic,"Sliced Ham, Pineapple, Mozzarella Cheese",3,2,1,1,2,2,0
+The Italian Capocollo Pizza,17.42680339462518,L,Classic,"Capocollo, Red Peppers, Tomatoes, Goat Cheese, Garlic, Oregano",6,0,1,0,-1,0,1
+The Italian Supreme Pizza,17.76974040021633,M,Supreme,"Calabrese Salami, Capocollo, Tomatoes, Red Onions, Green Olives, Garlic",6,1,2,2,1,0,2
+The Italian Vegetables Pizza,16.33923076923077,M,Veggie,"Eggplant, Artichokes, Tomatoes, Zucchini, Red Peppers, Garlic, Pesto Sauce",7,1,3,2,-1,0,2
+The Mediterranean Pizza,16.42795232936078,L,Veggie,"Spinach, Artichokes, Kalamata Olives, Sun-dried Tomatoes, Feta Cheese, Plum Tomatoes, Red Onions",7,0,3,4,-1,0,2
+The Mexicana Pizza,18.02403846153846,L,Veggie,"Tomatoes, Red Peppers, Jalapeno Peppers, Red Onions, Cilantro, Corn, Chipotle Sauce, Garlic",8,0,3,4,-1,0,2
+The Napolitana Pizza,16.437284631288765,L,Classic,"Tomatoes, Anchovies, Green Olives, Red Onions, Garlic",5,0,1,0,-1,0,1
+The Pepper Salami Pizza,17.637834036568215,L,Supreme,"Genoa Salami, Capocollo, Pepperoni, Tomatoes, Asiago Cheese, Garlic",6,0,2,4,3,0,2
+The Pepperoni Pizza,12.468657661460531,M,Classic,"Mozzarella Cheese, Pepperoni",2,1,1,1,-1,2,0
+"The Pepperoni, Mushroom, and Peppers Pizza",13.865126676602086,S,Classic,"Pepperoni, Mushrooms, Green Peppers",3,2,1,1,2,2,0
+The Prosciutto and Arugula Pizza,16.582457983193276,M,Supreme,"Prosciutto di San Daniele, Arugula, Mozzarella Cheese",3,1,2,1,-1,2,2
+The Sicilian Pizza,15.963831478537362,S,Supreme,"Coarse Sicilian Salami, Tomatoes, Green Olives, Luganega Sausage, Onions, Garlic",6,2,2,2,-1,0,2
+The Soppressata Pizza,17.077063740856843,L,Supreme,"Soppressata Salami, Fontina Cheese, Mozzarella Cheese, Mushrooms, Garlic",5,0,2,4,-1,0,2
+The Southwest Chicken Pizza,18.08050397877984,L,Chicken,"Chicken, Tomatoes, Red Peppers, Red Onions, Jalapeno Peppers, Corn, Cilantro, Chipotle Sauce",8,0,0,0,-1,0,1
+The Spicy Italian Pizza,18.104663487016428,L,Supreme,"Capocollo, Tomatoes, Goat Cheese, Artichokes, Peperoncini verdi, Garlic",6,0,2,4,3,0,2
+The Spinach Pesto Pizza,16.07967607105538,S,Veggie,"Spinach, Artichokes, Tomatoes, Sun-dried Tomatoes, Garlic, Pesto Sauce",6,2,3,2,-1,0,2
+The Spinach Supreme Pizza,16.08936170212766,S,Supreme,"Spinach, Red Onions, Pepperoni, Tomatoes, Artichokes, Kalamata Olives, Garlic, Asiago Cheese",8,2,2,2,-1,0,2
+The Spinach and Feta Pizza,16.07629189944134,M,Veggie,"Spinach, Mushrooms, Red Onions, Feta Cheese, Garlic",5,1,3,2,-1,0,2
+The Thai Chicken Pizza,18.28606911447084,L,Chicken,"Chicken, Pineapple, Tomatoes, Red Peppers, Thai Sweet Chilli Sauce",5,0,0,0,-1,0,1
+The Vegetables + Vegetables Pizza,15.979966887417218,M,Veggie,"Mushrooms, Tomatoes, Red Peppers, Green Peppers, Red Onions, Zucchini, Spinach, Garlic",8,1,3,2,-1,0,2
