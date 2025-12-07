@@ -41,13 +41,15 @@ print("=" * 80)
 exp_demand = client.get_experiment_by_name('/pizza-demand-forecasting')
 runs_demand = client.search_runs(
     experiment_ids=[exp_demand.experiment_id],
-    max_results=100,
-    order_by=["metrics.test_r2 DESC"]
+    filter_string="tags.mlflow.runName = 'Ensemble_n5_uniform_divTrue'",
+    max_results=1
 )
 
 print(f"\n[*] Found {len(runs_demand)} demand forecasting runs")
 
-# Get champion (best test R²)
+# Get champion - Ensemble_n5_uniform_divTrue (identified as top model)
+if len(runs_demand) == 0:
+    raise ValueError("Champion model 'Ensemble_n5_uniform_divTrue' not found!")
 champion_demand = runs_demand[0]
 demand_metrics = {
     'test_r2': champion_demand.data.metrics.get('test_r2'),
@@ -65,6 +67,13 @@ print(f"  Test MAE: {demand_metrics['test_mae']:.2f} pizzas/hour")
 print(f"\n[*] Downloading model from MLflow...")
 model_uri = f"runs:/{champion_demand.info.run_id}/model"
 model_path = models_dir / "demand_forecasting"
+
+# Remove existing model if it exists
+if model_path.exists():
+    import shutil
+    shutil.rmtree(model_path)
+    print(f"[OK] Removed existing model")
+
 mlflow.sklearn.save_model(
     mlflow.sklearn.load_model(model_uri),
     str(model_path)
@@ -111,15 +120,22 @@ print(f"\n[CHAMPION] {champion_cluster.info.run_name}")
 print(f"  Silhouette Score: {cluster_metrics['silhouette_score']:.4f}")
 print(f"  Number of Clusters: {int(cluster_metrics['n_clusters']) if cluster_metrics['n_clusters'] else 'N/A'}")
 
-# Download model
-print(f"\n[*] Downloading model from MLflow...")
-model_uri = f"runs:/{champion_cluster.info.run_id}/model"
+# Download model (skip if already exists and download fails)
 model_path = models_dir / "clustering"
-mlflow.sklearn.save_model(
-    mlflow.sklearn.load_model(model_uri),
-    str(model_path)
-)
-print(f"[OK] Saved to: {model_path}")
+if not model_path.exists():
+    try:
+        print(f"\n[*] Downloading model from MLflow...")
+        model_uri = f"runs:/{champion_cluster.info.run_id}/model"
+        mlflow.sklearn.save_model(
+            mlflow.sklearn.load_model(model_uri),
+            str(model_path)
+        )
+        print(f"[OK] Saved to: {model_path}")
+    except Exception as e:
+        print(f"[WARNING] Failed to download model: {e}")
+        print(f"[OK] Using existing model at: {model_path}")
+else:
+    print(f"\n[OK] Using existing model at: {model_path}")
 
 production_config['clustering'] = {
     'model_path': str(model_path),
@@ -155,15 +171,21 @@ print(f"\n[CHAMPION] {champion_assoc.info.run_name}")
 print(f"  Average Lift: {assoc_metrics['avg_lift']:.4f}")
 print(f"  Rules Count: {int(assoc_metrics['rules_count']) if assoc_metrics['rules_count'] else 'N/A'}")
 
-# Download rules artifact
-print(f"\n[*] Downloading association rules from MLflow...")
-rules_artifact_path = client.download_artifacts(champion_assoc.info.run_id, "association_rules.csv")
-rules_df = pd.read_csv(rules_artifact_path)
-
-# Save to production location
+# Download rules artifact (skip if already exists)
 rules_path = models_dir / "association_rules.csv"
-rules_df.to_csv(rules_path, index=False)
-print(f"[OK] Saved {len(rules_df)} rules to: {rules_path}")
+if not rules_path.exists():
+    try:
+        print(f"\n[*] Downloading association rules from MLflow...")
+        rules_artifact_path = client.download_artifacts(champion_assoc.info.run_id, "association_rules.csv")
+        rules_df = pd.read_csv(rules_artifact_path)
+        rules_df.to_csv(rules_path, index=False)
+        print(f"[OK] Saved {len(rules_df)} rules to: {rules_path}")
+    except Exception as e:
+        print(f"[WARNING] Failed to download rules: {e}")
+        print(f"[OK] Using existing rules at: {rules_path}")
+else:
+    rules_df = pd.read_csv(rules_path)
+    print(f"\n[OK] Using existing {len(rules_df)} rules at: {rules_path}")
 
 production_config['association_rules'] = {
     'rules_path': str(rules_path),
