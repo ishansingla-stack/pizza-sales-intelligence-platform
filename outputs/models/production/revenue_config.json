@@ -1,0 +1,17 @@
+{
+  "model_type": "Ensemble",
+  "status": "deployed",
+  "run_id": "042c1407722244238c5a4a4440b77a40",
+  "run_name": "Ensemble_n5_uniform_divFalse",
+  "metrics": {
+    "test_r2": 0.6988431906355917,
+    "test_rmse": 2.438146263337404,
+    "test_mae": 0.6538597590231668,
+    "val_r2": 0.6936968409626945,
+    "val_rmse": 2.49264848849488,
+    "val_mae": 0.6524127110759886
+  },
+  "use_case": "Predict order revenue based on pizza composition",
+  "input_features": 53,
+  "output": "total_price (dollars)"
+}

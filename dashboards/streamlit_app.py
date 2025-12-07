@@ -125,6 +125,19 @@ def load_ml_models():
             st.warning(f"Association rules not available: {e}")
             models['association_status'] = 'pending'
 
+        # Load revenue prediction model
+        revenue_model_path = os.path.join(models_dir, "revenue_prediction")
+        revenue_config_path = os.path.join(models_dir, "revenue_config.json")
+
+        try:
+            models['revenue_model'] = mlflow.sklearn.load_model(revenue_model_path)
+            with open(revenue_config_path, 'r') as f:
+                models['revenue_config'] = json.load(f)
+            models['revenue_status'] = 'deployed'
+        except Exception as e:
+            st.warning(f"Revenue prediction model not available: {e}")
+            models['revenue_status'] = 'pending'
+
         return models
     except Exception as e:
         st.warning(f"Phase 1 ML models not available: {e}")
@@ -144,7 +157,7 @@ page = st.sidebar.radio(
     ["📊 Executive Dashboard", "🔮 Demand Forecasting (ML)", "👥 Customer Segments", "🔗 Bundle Recommendations", "📈 Sales Trends", "⏰ Staffing & Peak Hours", "📉 Business Metrics"]
 )
 
-# Show Phase 1 deployment status
+# Show ML Models deployment status
 if models:
     st.sidebar.markdown("---")
     st.sidebar.markdown("**ML Models Status**")
@@ -154,7 +167,10 @@ if models:
         st.sidebar.success(f"✅ Association Rules ({models.get('association_config', {}).get('num_rules', 0)} rules)")
     else:
         st.sidebar.info("⏳ Association Rules (Pending)")
-    st.sidebar.info("⏳ Revenue Prediction (Training)")
+    if models.get('revenue_status') == 'deployed':
+        st.sidebar.success(f"✅ Revenue Prediction (R²: {models.get('revenue_config', {}).get('metrics', {}).get('test_r2', 0):.2f})")
+    else:
+        st.sidebar.info("⏳ Revenue Prediction (Pending)")
 
 # ============================================================================
 # PAGE 1: EXECUTIVE DASHBOARD

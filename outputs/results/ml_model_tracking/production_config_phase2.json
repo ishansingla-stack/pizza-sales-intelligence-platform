@@ -1,0 +1,88 @@
+{
+  "deployment_phase": 2,
+  "deployment_date": "2025-12-07",
+  "models_deployed": 3,
+  "demand_forecasting": {
+    "status": "deployed",
+    "model_type": "Ensemble",
+    "model_path": "outputs/models/production/demand_forecasting",
+    "description": "Predicts hourly pizza demand (1-64 pizzas/hour)",
+    "metrics": {
+      "test_r2": 0.6923,
+      "test_rmse": 4.53,
+      "test_mae": 3.56
+    },
+    "input_features": [
+      "hour",
+      "day_of_week",
+      "month",
+      "day_of_month",
+      "week_of_year",
+      "is_weekend",
+      "hour_sin",
+      "hour_cos",
+      "day_sin",
+      "day_cos",
+      "month_sin",
+      "month_cos",
+      "day_of_month_sin",
+      "day_of_month_cos",
+      "prev_hour_pizzas",
+      "same_hour_yesterday",
+      "rolling_3h_avg",
+      "rolling_24h_avg"
+    ],
+    "output": "total_pizzas (hourly aggregate)",
+    "use_case": "Inventory planning, staffing optimization"
+  },
+  "clustering": {
+    "status": "deployed",
+    "algorithm": "DBSCAN",
+    "model_path": "outputs/models/production/clustering",
+    "config_path": "outputs/models/production/clustering_config.json",
+    "description": "Customer segmentation based on product attributes",
+    "metrics": {
+      "silhouette_score": 0.8305
+    },
+    "parameters": {
+      "eps": 0.5,
+      "min_samples": 2,
+      "metric": "manhattan"
+    },
+    "input_features": [
+      "unit_price",
+      "ingredient_count",
+      "size_encoded",
+      "category_encoded"
+    ],
+    "output": "cluster_labels",
+    "use_case": "Product categorization, menu optimization"
+  },
+  "revenue_prediction": {
+    "status": "deployed",
+    "model_type": "Ensemble",
+    "run_id": "042c1407722244238c5a4a4440b77a40",
+    "run_name": "Ensemble_n5_uniform_divFalse",
+    "metrics": {
+      "test_r2": 0.6988431906355917,
+      "test_rmse": 2.438146263337404,
+      "test_mae": 0.6538597590231668,
+      "val_r2": 0.6936968409626945,
+      "val_rmse": 2.49264848849488,
+      "val_mae": 0.6524127110759886
+    },
+    "use_case": "Revenue prediction per order",
+    "output": "total_price (revenue in dollars)",
+    "input_features": 53,
+    "feature_engineering": "Excludes quantity to prevent data leakage"
+  },
+  "association_rules": {
+    "status": "deployed",
+    "algorithm": "Apriori",
+    "num_rules": 460,
+    "metrics": {
+      "avg_lift": 1.0929,
+      "avg_confidence": 0.0907
+    }
+  }
+}
