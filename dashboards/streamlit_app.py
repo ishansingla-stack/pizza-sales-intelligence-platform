@@ -581,21 +581,6 @@ elif page == "🔮 Demand Forecasting (ML)":
             st.markdown(f"- Rolling: 3h average, 24h average")
 
 # ============================================================================
-# PAGE 3: CUSTOMER SEGMENTS
-# ============================================================================
-elif page == "👥 Customer Segments":
-    st.header("Customer Segmentation Analysis")
-    st.markdown("Understanding customer groups based on ordering patterns and preferences.")
-
-    # Show Phase 1 clustering model if available
-    if models and 'cluster_model' in models:
-        st.info(f"**Phase 1 Model:** DBSCAN Clustering (Silhouette Score: {models['cluster_config']['metrics']['silhouette_score']:.4f})")
-        st.markdown("Our deployed DBSCAN model identified distinct product segments based on price, ingredients, size, and category.")
-
-    # Rest of original Customer Segments code continues...
-    # (keeping the existing visualization code)
-
-# ============================================================================
 # PAGE 4: BUNDLE RECOMMENDATIONS
 # ============================================================================
 elif page == "🔗 Bundle Recommendations":
