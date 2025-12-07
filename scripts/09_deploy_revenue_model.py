@@ -36,9 +36,9 @@ results_df = pd.read_csv(results_path)
 
 print(f"[OK] Loaded {len(results_df)} training results")
 
-# Get champion model (best ensemble by validation RMSE)
+# Get champion model - Ensemble_n5_uniform_divTrue (identified as top model)
 ensemble_df = results_df[results_df['model_name'] == 'Ensemble']
-champion = ensemble_df.nsmallest(1, 'val_rmse').iloc[0]
+champion = ensemble_df[ensemble_df['run_name'] == 'Ensemble_n5_uniform_divTrue'].iloc[0]
 
 print(f"\n[CHAMPION MODEL]")
 print(f"  Model: {champion['model_name']}")

@@ -1,8 +1,8 @@
 {
   "model_type": "Ensemble",
   "status": "deployed",
-  "run_id": "042c1407722244238c5a4a4440b77a40",
-  "run_name": "Ensemble_n5_uniform_divFalse",
+  "run_id": "e594b3afda0c4b0789f3b54fce059ac9",
+  "run_name": "Ensemble_n5_uniform_divTrue",
   "metrics": {
     "test_r2": 0.6988431906355917,
     "test_rmse": 2.438146263337404,
