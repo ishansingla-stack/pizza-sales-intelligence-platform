@@ -42,6 +42,12 @@ The Pizza Intelligence Platform is a comprehensive machine learning solution tha
 - **Best Ensemble**: 5-model diverse ensemble (Val RMSE: 0.05, Test RMSE: 0.14, R²: 0.999)
 - **Models Trained**: 112 runs (104 individual + 8 ensembles)
 
+### Demand Forecasting (Staffing Optimization)
+- **Champion Model**: Ensemble #5 (n=5, uniform weights)
+- **Test R²**: 0.6923 (69.2% variance explained)
+- **Test RMSE**: 4.53 pizzas/hour
+- **Test MAE**: 3.56 pizzas/hour
+
 ### Classification
 - **Champion**: Gradient Boosting (86.96% accuracy, F1: 0.867, ROC-AUC: 0.981)
 
@@ -54,8 +60,8 @@ The Pizza Intelligence Platform is a comprehensive machine learning solution tha
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/YOUR-USERNAME/pizza-intelligence-platform.git
-cd pizza-intelligence-platform/pizza-intelligence
+git clone https://github.com/ishansingla-stack/pizza-sales-intelligence-platform.git
+cd pizza-sales-intelligence-platform
 
 # 2. Install dependencies
 pip install -r requirements.txt
@@ -72,7 +78,7 @@ Dashboard opens at: **http://localhost:8501**
 2. Go to **[share.streamlit.io](https://share.streamlit.io)**
 3. Click **"New app"**
 4. Configure:
-   - **Repository**: `your-username/pizza-intelligence-platform`
+   - **Repository**: `your-username/pizza-sales-intelligence-platform`
    - **Branch**: `main`
    - **Main file path**: `dashboards/streamlit_app.py`
 5. Click **"Deploy!"**
@@ -140,18 +146,21 @@ pizza-intelligence/
 | **Data Processing** | pandas, numpy |
 | **Association Rules** | mlxtend (Apriori, FP-Growth) |
 
-## Requirements
+## Core Requirements
 
+See [requirements.txt](requirements.txt) for the complete list of dependencies.
+
+**Key packages:**
 ```
-pandas>=2.0.0
-numpy>=1.24.0
+pandas>=1.5.0
+numpy>=1.23.0
 scikit-learn>=1.3.0
-xgboost>=2.0.0
+xgboost>=1.7.0
 lightgbm>=4.0.0
 streamlit>=1.28.0
 plotly>=5.17.0
 mlxtend>=0.22.0
-openpyxl>=3.1.0
+mlflow>=2.9.0
 ```
 
 ## Dataset
@@ -187,5 +196,3 @@ For questions or issues:
 
 **Built with**: Python, Streamlit, Plotly, scikit-learn, XGBoost, MLflow
 **Powered by**: Machine Learning, Predictive Analytics, Data Science
-
-**Live Dashboard**: [Add your Streamlit Cloud URL here after deployment]
