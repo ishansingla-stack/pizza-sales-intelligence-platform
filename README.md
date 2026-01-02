@@ -171,9 +171,6 @@ mlflow>=2.9.0
 - **Features**: 51 engineered features
 - **Time Period**: Full year of sales
 
-## Contributing
-
-This project is part of CIS 508 coursework at Arizona State University.
 
 ## License
 
