@@ -10,10 +10,10 @@
 
 The Pizza Intelligence Platform is a comprehensive machine learning solution that analyzes 48,620 pizza orders to provide actionable business insights including:
 
-- **Revenue Prediction**: 99.13% accurate sales forecasting (88 ML models trained)
-- **Bundle Recommendations**: 12 strategic bundles with 3x purchase likelihood
-- **Customer Segmentation**: 4 distinct customer groups identified
-- **Predictive Staffing**: Hour-by-hour demand forecasting
+- **Revenue Forecasting**: Ensemble model (R² = 0.699, RMSE = 2.44)
+- **Demand Forecasting**: Hour-by-hour prediction (R² = 0.692, RMSE = 4.53 pizzas/hour)
+- **Bundle Recommendations**: 460 association rules discovered (Max Lift: 1.38x)
+- **Customer Segmentation**: DBSCAN clustering (Silhouette: 0.831)
 - **Interactive Dashboard**: 6-page Streamlit application
 
 ## Features
@@ -33,14 +33,12 @@ The Pizza Intelligence Platform is a comprehensive machine learning solution tha
 
 ## Model Performance
 
-### Revenue Prediction
-- **Best Ensemble**: 5-model diverse ensemble (Val RMSE: 2.52, Test RMSE: 2.49, R²: 0.687)
-- **Individual Champion**: Ridge Regression (Test RMSE: 48.65, R²: 0.991)
+### Revenue Forecasting
+- **Champion Model**: Ensemble #5 (n=5, uniform weights)
+- **Test R²**: 0.6988 (69.9% variance explained)
+- **Test RMSE**: 2.4381
+- **Test MAE**: 0.6539
 - **Models Trained**: 88 runs (80 individual + 8 ensembles)
-
-### Sales Volume Prediction
-- **Best Ensemble**: 5-model diverse ensemble (Val RMSE: 0.05, Test RMSE: 0.14, R²: 0.999)
-- **Models Trained**: 112 runs (104 individual + 8 ensembles)
 
 ### Demand Forecasting (Staffing Optimization)
 - **Champion Model**: Ensemble #5 (n=5, uniform weights)
@@ -48,11 +46,17 @@ The Pizza Intelligence Platform is a comprehensive machine learning solution tha
 - **Test RMSE**: 4.53 pizzas/hour
 - **Test MAE**: 3.56 pizzas/hour
 
-### Classification
-- **Champion**: Gradient Boosting (86.96% accuracy, F1: 0.867, ROC-AUC: 0.981)
+### Clustering (Customer Segmentation)
+- **Champion**: DBSCAN (run_2)
+- **Silhouette Score**: 0.8305 (excellent cluster separation)
+- **Parameters**: eps=0.5, min_samples=2, metric=manhattan
 
-### Clustering
-- **Winner**: DBSCAN (Silhouette: 0.769, 21 outliers identified)
+### Association Rules (Bundle Recommendations)
+- **Algorithm**: FP-Growth (sup=0.005, lift=0.5)
+- **Rules Generated**: 460
+- **Average Lift**: 1.0929
+- **Max Lift**: 1.3761
+- **Average Confidence**: 0.0907 (9.07%)
 
 ## Quick Start
 
@@ -130,10 +134,10 @@ pizza-intelligence/
 - **Total Projected Impact**: $150K-$295K annually
 
 ### Model Achievements
-- **99.13% Accuracy**: Ridge regression for sales forecasting
-- **3x Lift**: Bundle recommendations purchase likelihood
-- **21 Underperformers**: Identified for menu optimization
-- **No Overfitting**: Champion models generalize perfectly
+- **69.9% R²**: Revenue forecasting with ensemble methods
+- **69.2% R²**: Demand forecasting for staffing optimization
+- **1.38x Max Lift**: Bundle recommendations from association rules
+- **0.831 Silhouette**: Excellent customer cluster separation
 
 ## Technology Stack
 
