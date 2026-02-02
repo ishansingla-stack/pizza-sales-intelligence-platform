@@ -6,6 +6,8 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
+**[Live Demo](https://pizza-intelligence-platform.streamlit.app/)**
+
 ## Overview
 
 The Pizza Intelligence Platform is a comprehensive machine learning solution that analyzes 48,620 pizza orders to provide actionable business insights including:
